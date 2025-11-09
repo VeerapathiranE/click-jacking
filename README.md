@@ -26,3 +26,47 @@ Educational demo that shows a clickjacking (UI redressing) scenario and how to p
 1. Open a terminal and go to project root:
 ```bash
 cd /path/to/clickjacking-demo
+
+2)Install dependencies:
+
+npm install
+
+
+3)Start the target server (port 3000):
+
+npm start
+# or: node server.js
+# Server serves /target and /attacker on port 3000 by default
+
+
+4)Serve attacker page on a different origin (port 4000) — run in a new terminal:
+
+Option A (npx):
+
+npx http-server ./public -p 4000
+
+
+Option B (Python):
+
+cd public
+python -m http.server 4000
+
+
+5)Open in your browser:
+
+Victim (local target): http://localhost:3000/target
+
+Attacker (cross-origin): http://localhost:4000/attacker.html
+
+Toggle protection (how to configure)
+
+Open server.js and find:
+
+const ENABLE_PROTECTION = true; // or false
+
+
+true — server will add headers (X-Frame-Options: SAMEORIGIN and Content-Security-Policy: frame-ancestors 'self') to prevent framing.
+
+false — server will not set framing headers (simulates a vulnerable site).
+
+After changing this value, restart the server (Ctrl+C then npm start).

@@ -1,0 +1,38 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <title>Target Site — Profile</title>
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <style>
+    body { font-family: Arial, sans-serif; margin: 40px; }
+    .card { border: 1px solid #ddd; padding: 20px; border-radius: 8px; max-width: 480px; }
+    .btn { background:#1e88e5; color:#fff; padding:10px 14px; border-radius:6px; text-decoration:none; display:inline-block; margin-top:12px; }
+  </style>
+</head>
+<body>
+  <div class="card">
+    <h2>Account Settings</h2>
+    <p id="balance">Balance: <strong>₹1000</strong></p>
+    <button id="transferBtn" class="btn">Transfer ₹1000</button>
+    <p style="margin-top:12px;color:#666">This demo page simulates a sensitive action button.</p>
+  </div>
+
+  <script>
+    document.getElementById('transferBtn').addEventListener('click', function(){
+      alert('Money transferred (simulated).');
+      // In real app this would call backend to transfer money
+    });
+
+    // Visual cue to detect if inside an iframe
+    if (window.self !== window.top) {
+      // We are framed
+      const note = document.createElement('div');
+      note.style.color = 'red';
+      note.style.marginTop = '8px';
+      note.textContent = 'Notice: This page is being displayed inside a frame.';
+      document.body.insertBefore(note, document.body.firstChild);
+    }
+  </script>
+</body>
+</html>

